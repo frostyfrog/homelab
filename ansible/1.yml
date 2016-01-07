@@ -1,0 +1,81 @@
+This ansible script is used to configure two Dell Poweredge R210 machines. Both
+machines run Archlinux. The purpose is to learn how to configure ansible for
+mass deployment while maintaining a consistent state across machines.
+---
+- hosts: r210
+  remote_user: root
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python2"
+  roles:
+    - yaegashi.blockinfile
+
+  tasks:
+  - name: ensure that python2 is installed
+    raw: pacman -Qi python2 || pacman -Sy python2 --no-confirm
+  - name: ensure rxvt-unicode is at the latest version
+    pacman: name=rxvt-unicode state=latest
+  - name: ensure that haveged is installed
+    pacman: name=haveged state=latest
+  - name: ensure that haveged is running
+    service:
+      name: haveged
+      state: started
+  - name: load and use Frostyfrog's package signing key
+    shell: "pacman-key --init && pacman-key --populate archlinux && pacman-key -r 0x362db4a50060df7b && pacman-key -f 0x362db4a50060df7b && pacman-key --lsign 0x362db4a50060df7b && touch /root/.frozen_key"
+    args:
+      creates: /root/.frozen_key
+  - name: add frostyrepo to pacman.conf
+    blockinfile:
+      backup: yes
+      dest: /etc/pacman.conf
+      insertbefore: "^\\[core\\]"
+      content: "[frostyrepo]\nSigLevel = Required\nServer = http://repo.frostyfrog.net/\n"
+  - name: colorize pacman
+    lineinfile:
+      dest: /etc/pacman.conf
+      backup: yes
+      regexp: "^#?Color"
+      line: "Color"
+  - name: Nom nom nom ~Pacman
+    lineinfile:
+      dest: /etc/pacman.conf
+      backup: yes
+      regexp: "^ILoveCandy"
+      insertafter: "^Color"
+      line: "ILoveCandy"
+  - name: boot to sda2 (The Root)
+    replace:
+      dest: /boot/syslinux/syslinux.cfg
+      regexp: "(.*)?/dev/sda3(.*)?$"
+      replace: '\1/dev/sda2\2'
+      backup: yes
+  - name: ensure that the system is up-to-date
+    command: pacman -Syu
+#    pacman:
+#      upgrade: yes
+#      update_cache: yes
+#      state: latest
+  - name: ensure that all standard packages are installed
+    pacman:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - htop
+      - renzoku
+      - ncdu
+      - asciiquarium
+      - git
+      - clockywock
+      - tty-clock
+      - vim
+      - elinks
+      - weechat
+      - ffmpeg
+      - alsi
+      - inxi
+      - dmidecode
+      - vlock
+      - bc
+      - when
+#  - name: write the apache config file
+#    template: src=/srv/httpd.j2 dest=/etc/httpd.conf
