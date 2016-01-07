@@ -1,0 +1,3 @@
+[submodule "ansible/roles/yaegashi.blockinfile"]
+	path = ansible/roles/yaegashi.blockinfile
+	url = https://github.com/yaegashi/ansible-role-blockinfile.git
